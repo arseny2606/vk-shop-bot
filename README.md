@@ -1,0 +1,1 @@
+# vk-shop-bot
