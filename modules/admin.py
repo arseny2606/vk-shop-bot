@@ -15,19 +15,21 @@ main_keyboard = Keyboard(one_time=False, inline=False)
 main_keyboard.add(Text("Изменить товары", payload={"command": "edit_products"}),
                   color=KeyboardButtonColor.POSITIVE)
 main_keyboard.add(Text("Изменить категории", payload={"command": "edit_categories"}),
-                  color=KeyboardButtonColor.POSITIVE)
+                  color=KeyboardButtonColor.POSITIVE).row()
+main_keyboard.add(Text("Назад", payload={"command": "start"}),
+                  color=KeyboardButtonColor.PRIMARY)
 
 products_keyboard = Keyboard(one_time=False, inline=False)
 products_keyboard.add(Text("Добавить продукт", payload={"command": "add_product"}),
-                      color=KeyboardButtonColor.POSITIVE)
+                      color=KeyboardButtonColor.POSITIVE).row()
 products_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
-                      color=KeyboardButtonColor.POSITIVE)
+                      color=KeyboardButtonColor.PRIMARY)
 
 categories_keyboard = Keyboard(one_time=False, inline=False)
 categories_keyboard.add(Text("Добавить категорию", payload={"command": "add_category"}),
-                        color=KeyboardButtonColor.POSITIVE)
+                        color=KeyboardButtonColor.POSITIVE).row()
 categories_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
-                        color=KeyboardButtonColor.POSITIVE)
+                        color=KeyboardButtonColor.PRIMARY)
 
 
 @bp.on.message(text=["Админ-панель", "админ-панель"])

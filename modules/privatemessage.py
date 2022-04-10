@@ -21,6 +21,7 @@ main_admin_keyboard.add(Text("Админ-панель", payload={"command": "adm
 @bp.on.message(text=["начать", "Начать"])
 @bp.on.message(payload={"command": "start"})
 async def start(message: Message):
+    user_profile = User.objects.get_or_create(user_id=message.from_id)[0]
     if user_profile.role.priority >= 80:
         await message.answer("Привет!", keyboard=main_admin_keyboard.get_json())
     else:
