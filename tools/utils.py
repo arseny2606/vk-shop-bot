@@ -1,4 +1,7 @@
+from functools import wraps
+
 from vkbottle import Bot
+from vkbottle.bot import Message
 
 from config import bot_token
 
@@ -24,3 +27,21 @@ async def getName(uid: int, name_case: str = "nom") -> tuple[str, str]:
         return "Сообщество", f"<<{group_data.name}>>"
     userData = await bot.api.users.get(user_ids=[str(uid)], name_case=name_case)
     return userData[0].first_name, userData[0].last_name
+
+
+def check_role(priority):
+    from db.models import User
+    from modules.privatemessage import start
+
+    def decorator(func):
+        @wraps(func)
+        async def checker(message: Message, *args, **kwargs):
+            user_account = User.objects.get_or_create(user_id=message.from_id)[0]
+            if user_account.role.priority >= priority:
+                return await func(message, *args, **kwargs)
+            else:
+                return await start(message)
+
+        return checker
+
+    return decorator
