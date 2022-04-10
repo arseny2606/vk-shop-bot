@@ -34,3 +34,19 @@ class User(models.Model):
 
     def __str__(self):
         return f"User vk.com/id{self.user_id}, {self.role.name}"
+
+
+class Category(models.Model):
+    name = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.name
+
+
+class Product(models.Model):
+    name = models.CharField(max_length=200)
+    price = models.IntegerField(default=1)
+    category = models.ForeignKey(Category, on_delete=models.SET_DEFAULT, default="none")
+
+    def __str__(self):
+        return self.name
