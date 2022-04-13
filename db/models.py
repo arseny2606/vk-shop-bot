@@ -21,6 +21,7 @@ class Role(models.Model):
 class User(models.Model):
     user_id = models.IntegerField()
     role = models.ForeignKey(Role, on_delete=models.SET_DEFAULT, default=1)
+    balance = models.FloatField(default=0)
 
     def get_full_name(self, name_case: str = "nom"):
         return ' '.join(asyncio.run(getName(self.user_id, name_case)))

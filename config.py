@@ -6,3 +6,4 @@ from dotenv import load_dotenv
 load_dotenv()
 
 bot_token = os.environ["BOT_TOKEN"]
+qiwi_token = os.environ["QIWI_TOKEN"]

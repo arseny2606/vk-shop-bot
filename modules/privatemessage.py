@@ -9,10 +9,14 @@ bp.labeler.auto_rules = [rules.PeerRule(from_chat=False)]
 
 main_keyboard = Keyboard(one_time=False, inline=False)
 main_keyboard.add(Text("Товары", payload={"command": "products"}),
-                  color=KeyboardButtonColor.POSITIVE)
+                  color=KeyboardButtonColor.POSITIVE).row()
+main_keyboard.add(Text("Профиль", payload={"command": "profile"}),
+                  color=KeyboardButtonColor.POSITIVE).row()
 
 main_admin_keyboard = Keyboard(one_time=False, inline=False)
 main_admin_keyboard.add(Text("Товары", payload={"command": "products"}),
+                        color=KeyboardButtonColor.POSITIVE).row()
+main_admin_keyboard.add(Text("Профиль", payload={"command": "profile"}),
                         color=KeyboardButtonColor.POSITIVE).row()
 main_admin_keyboard.add(Text("Админ-панель", payload={"command": "admin_panel"}),
                         color=KeyboardButtonColor.PRIMARY)
@@ -28,6 +32,6 @@ async def start(message: Message):
         await message.answer("Привет!", keyboard=main_keyboard.get_json())
 
 
-@bp.on.message()
-async def handle_message(message: Message):
-    await start(message)
+# @bp.on.message()
+# async def handle_message(message: Message):
+#     await start(message)

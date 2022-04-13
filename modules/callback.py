@@ -42,8 +42,8 @@ async def handle_callback(event: GroupTypes.MessageEvent):
             return
         category_keyboard = Keyboard(one_time=False, inline=True)
         category_keyboard.add(
-            Callback("Изменить", {"command": "edit_product", "product_id": product_id
-                                  }), color=KeyboardButtonColor.PRIMARY).row()
+            Callback("изменить".capitalize(), {"command": "edit_product", "product_id": product_id
+                                               }), color=KeyboardButtonColor.PRIMARY).row()
         category_keyboard.add(
             Callback("Удалить", {"command": "delete_product", "product_id": product_id
                                  }), color=KeyboardButtonColor.NEGATIVE)
@@ -123,8 +123,8 @@ async def handle_callback(event: GroupTypes.MessageEvent):
             return
         category_keyboard = Keyboard(one_time=False, inline=True)
         category_keyboard.add(
-            Callback("Изменить", {"command": "edit_category", "category_id": category_id
-                                  }), color=KeyboardButtonColor.PRIMARY).row()
+            Callback("изменить".capitalize(), {"command": "edit_category", "category_id": category_id
+                                               }), color=KeyboardButtonColor.PRIMARY).row()
         category_keyboard.add(
             Callback("Удалить", {"command": "delete_category", "category_id": category_id
                                  }), color=KeyboardButtonColor.NEGATIVE)

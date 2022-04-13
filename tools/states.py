@@ -17,3 +17,7 @@ class AddCategory(BaseStateGroup):
 
 class EditCategory(BaseStateGroup):
     EDIT_NAME = 5
+
+
+class AddBalance(BaseStateGroup):
+    AMOUNT = 6
