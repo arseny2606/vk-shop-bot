@@ -18,3 +18,12 @@ class DeleteProduct(BaseStateGroup):
 
 class AddCategory(BaseStateGroup):
     NAME = 6
+
+
+class EditCategory(BaseStateGroup):
+    NAME = 7
+    EDIT_NAME = 8
+
+
+class DeleteCategory(BaseStateGroup):
+    NAME = 9

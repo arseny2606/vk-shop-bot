@@ -4,7 +4,7 @@ from vkbottle import Keyboard, Text, KeyboardButtonColor
 from vkbottle.bot import Blueprint, rules, Message
 
 from db.models import Category, Product
-from tools.states import AddCategory, AddProduct, EditProduct, DeleteProduct
+from tools.states import AddCategory, AddProduct, EditProduct, DeleteProduct, EditCategory, DeleteCategory
 from tools.utils import check_role
 
 bp = Blueprint("admin menu")
@@ -31,6 +31,10 @@ products_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
 
 categories_keyboard = Keyboard(one_time=False, inline=False)
 categories_keyboard.add(Text("Добавить категорию", payload={"command": "add_category"}),
+                        color=KeyboardButtonColor.POSITIVE).row()
+categories_keyboard.add(Text("изменить категорию".capitalize(), payload={"command": "edit_category"}),
+                        color=KeyboardButtonColor.POSITIVE).row()
+categories_keyboard.add(Text("удалить категорию".capitalize(), payload={"command": "delete_category"}),
                         color=KeyboardButtonColor.POSITIVE).row()
 categories_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
                         color=KeyboardButtonColor.PRIMARY)
@@ -100,7 +104,7 @@ async def delete_product(message: Message):
 
 @bp.on.message(state=DeleteProduct.NAME)
 @check_role(priority=80)
-async def edit_product_name_handler(message: Message):
+async def delete_product_name_handler(message: Message):
     product = Product.objects.get_or_create(name=json.loads(message.payload)["product"])[0]
     name = product.name
     product.delete()
@@ -158,6 +162,64 @@ async def edit_categories(message: Message):
     categories = [f"- {i.name}\n" for i in Category.objects.all()]
     await message.answer(f"Список категорий:\n{''.join(categories)}",
                          keyboard=categories_keyboard.get_json())
+
+
+@bp.on.message(text=["изменить категорию".capitalize(), "изменить категорию"])
+@bp.on.message(payload={"command": "edit_category"})
+@check_role(priority=80)
+async def edit_category(message: Message):
+    temp_keyboard = Keyboard(inline=True)
+    for i in Category.objects.all():
+        temp_keyboard.add(Text(i.name, payload={"category": f"{i.name}"}))
+    await message.answer(f"Выберите категорию:", keyboard=temp_keyboard.get_json())
+    await bp.state_dispenser.set(message.from_id, EditCategory.NAME)
+
+
+@bp.on.message(state=EditCategory.NAME)
+@check_role(priority=80)
+async def category_name_handler(message: Message):
+    category = Category.objects.get_or_create(name=json.loads(message.payload)["category"])[0]
+    temp_keyboard = Keyboard(inline=True)
+    temp_keyboard.add(Text("Оставить"))
+    await message.answer(f"Прошлое имя: <<{category.name}>>\nВведите новое имя:",
+                         keyboard=temp_keyboard.get_json())
+    await bp.state_dispenser.set(message.from_id, EditCategory.EDIT_NAME, category=category)
+
+
+@bp.on.message(state=EditCategory.EDIT_NAME)
+@check_role(priority=80)
+async def edit_category_name_handler(message: Message):
+    category = message.state_peer.payload['category']
+    if message.text != "Оставить":
+        category.name = message.text
+        category.save()
+    await message.answer(f"Категория <<{category.name}>> успешно изменена",
+                         keyboard=categories_keyboard.get_json())
+    await bp.state_dispenser.delete(message.from_id)
+    await edit_categories(message)
+
+
+@bp.on.message(text=["удалить категорию".capitalize(), "удалить категорию"])
+@bp.on.message(payload={"command": "delete_category"})
+@check_role(priority=80)
+async def delete_category(message: Message):
+    temp_keyboard = Keyboard(inline=True)
+    for i in Category.objects.all():
+        temp_keyboard.add(Text(i.name, payload={"category": f"{i.name}"}))
+    await message.answer(f"Выберите категорию:", keyboard=temp_keyboard.get_json())
+    await bp.state_dispenser.set(message.from_id, DeleteCategory.NAME)
+
+
+@bp.on.message(state=DeleteCategory.NAME)
+@check_role(priority=80)
+async def delete_category_name_handler(message: Message):
+    category = Category.objects.get_or_create(name=json.loads(message.payload)["category"])[0]
+    name = category.name
+    category.delete()
+    await message.answer(f"Категория <<{name}>> успешно удалена",
+                         keyboard=products_keyboard.get_json())
+    await bp.state_dispenser.delete(message.from_id)
+    await edit_categories(message)
 
 
 @bp.on.message(text=["Добавить категорию", "добавить категорию"])
