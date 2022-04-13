@@ -4,8 +4,7 @@ from vkbottle import Keyboard, Text, KeyboardButtonColor, Callback
 from vkbottle.bot import Blueprint, rules, Message
 
 from db.models import Category, Product
-from tools.states import AddCategory, AddProduct, EditProduct, EditCategory, \
-    DeleteCategory
+from tools.states import AddCategory, AddProduct, EditProduct, EditCategory
 from tools.utils import check_role
 
 bp = Blueprint("admin menu")
@@ -58,7 +57,7 @@ async def manage_products(message: Message):
     products = products[:7]
     products_list_keyboard = Keyboard(one_time=False, inline=False)
     products_list_keyboard.add(Text("Добавить продукт", payload={"command": "add_product"}),
-                               color=KeyboardButtonColor.POSITIVE).row()
+                               color=KeyboardButtonColor.PRIMARY).row()
     for product in products:
         products_list_keyboard.add(Callback(f"{product.name} ({float(product.price)} RUB)",
                                             {"command": "show_product", "product_id": product.id}),
@@ -86,7 +85,7 @@ async def manage_products_page(message: Message):
         return "Здесь ничего нет"
     products_list_keyboard = Keyboard(one_time=False, inline=False)
     products_list_keyboard.add(Text("Добавить продукт", payload={"command": "add_product"}),
-                               color=KeyboardButtonColor.POSITIVE).row()
+                               color=KeyboardButtonColor.PRIMARY).row()
     for product in products:
         products_list_keyboard.add(Callback(f"{product.name} ({float(product.price)} RUB)",
                                             {"command": "show_product", "product_id": product.id}),
@@ -118,38 +117,65 @@ async def add_product(message: Message):
 @bp.on.message(payload={"command": "manage_categories"})
 @check_role(priority=80)
 async def manage_categories(message: Message):
-    categories = [f"- {i.name}\n" for i in Category.objects.all()]
-    await message.answer(f"Список категорий:\n{''.join(categories)}",
-                         keyboard=categories_keyboard.get_json())
+    categories = Category.objects.all()
+    categories = categories[:7]
+    categories_list_keyboard = Keyboard(one_time=False, inline=False)
+    categories_list_keyboard.add(Text("Добавить категорию", payload={"command": "add_category"}),
+                                 color=KeyboardButtonColor.PRIMARY).row()
+    for category in categories:
+        categories_list_keyboard.add(Callback(f"{category.name}",
+                                              {"command": "show_category",
+                                               "category_id": category.id}),
+                                     color=KeyboardButtonColor.POSITIVE).row()
+    categories_list_keyboard.add(
+        Text("➡",
+             payload={"command": "manage_categories", "page": 2}),
+        color=KeyboardButtonColor.SECONDARY).row()
+    categories_list_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
+                                 color=KeyboardButtonColor.PRIMARY)
+    await message.answer(f"Меню управления категориями.",
+                         keyboard=categories_list_keyboard.get_json())
 
 
-@bp.on.message(text=["изменить категорию".capitalize(), "изменить категорию"])
-@bp.on.message(payload={"command": "edit_category"})
+@bp.on.message(payload_map={"command": "manage_categories", "page": int})
 @check_role(priority=80)
-async def edit_category(message: Message):
-    temp_keyboard = Keyboard(inline=True)
-    for i in Category.objects.all():
-        temp_keyboard.add(Text(i.name, payload={"category": f"{i.name}"}))
-    await message.answer(f"Выберите категорию:", keyboard=temp_keyboard.get_json())
-    await bp.state_dispenser.set(message.from_id, EditCategory.NAME)
-
-
-@bp.on.message(text=["удалить категорию".capitalize(), "удалить категорию"])
-@bp.on.message(payload={"command": "delete_category"})
-@check_role(priority=80)
-async def delete_category(message: Message):
-    temp_keyboard = Keyboard(inline=True)
-    for i in Category.objects.all():
-        temp_keyboard.add(Text(i.name, payload={"category": f"{i.name}"}))
-    await message.answer(f"Выберите категорию:", keyboard=temp_keyboard.get_json())
-    await bp.state_dispenser.set(message.from_id, DeleteCategory.NAME)
+async def manage_categories_page(message: Message):
+    payload = json.loads(message.payload)
+    page = payload["page"]
+    categories = Category.objects.all()
+    if page < 1:
+        return "Здесь ничего нет"
+    categories = categories[7 * (page - 1):7 * page]
+    if not categories:
+        return "Здесь ничего нет"
+    categories_list_keyboard = Keyboard(one_time=False, inline=False)
+    categories_list_keyboard.add(Text("Добавить категорию", payload={"command": "add_category"}),
+                                 color=KeyboardButtonColor.PRIMARY).row()
+    for category in categories:
+        categories_list_keyboard.add(Callback(f"{category.name}",
+                                              {"command": "show_category",
+                                               "category_id": category.id}),
+                                     color=KeyboardButtonColor.POSITIVE).row()
+    if page - 1:
+        categories_list_keyboard.add(
+            Text("⬅",
+                 payload={"command": "manage_categories", "page": page - 1}),
+            color=KeyboardButtonColor.SECONDARY)
+    categories_list_keyboard.add(
+        Text("➡",
+             payload={"command": "manage_categories", "page": 2}),
+        color=KeyboardButtonColor.SECONDARY).row()
+    categories_list_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
+                                 color=KeyboardButtonColor.PRIMARY)
+    await message.answer(f"Страница {page}",
+                         keyboard=categories_list_keyboard.get_json())
 
 
 @bp.on.message(text=["Добавить категорию", "добавить категорию"])
 @bp.on.message(payload={"command": "add_category"})
 @check_role(priority=80)
 async def add_category(message: Message):
-    await message.answer(f"Введите имя категории:", keyboard=categories_keyboard.get_json())
+    await message.answer(f"Введите имя категории:")
     await bp.state_dispenser.set(message.from_id, AddCategory.NAME)
 
 
@@ -199,17 +225,6 @@ async def add_product_category_handler(message: Message):
     await manage_products(message)
 
 
-@bp.on.message(state=EditCategory.NAME)
-@check_role(priority=80)
-async def category_name_handler(message: Message):
-    category = Category.objects.get_or_create(name=json.loads(message.payload)["category"])[0]
-    temp_keyboard = Keyboard(inline=True)
-    temp_keyboard.add(Text("Оставить"))
-    await message.answer(f"Прошлое имя: <<{category.name}>>\nВведите новое имя:",
-                         keyboard=temp_keyboard.get_json())
-    await bp.state_dispenser.set(message.from_id, EditCategory.EDIT_NAME, category=category)
-
-
 @bp.on.message(state=EditCategory.EDIT_NAME)
 @check_role(priority=80)
 async def edit_category_name_handler(message: Message):
@@ -223,24 +238,12 @@ async def edit_category_name_handler(message: Message):
     await manage_categories(message)
 
 
-@bp.on.message(state=DeleteCategory.NAME)
-@check_role(priority=80)
-async def delete_category_name_handler(message: Message):
-    category = Category.objects.get_or_create(name=json.loads(message.payload)["category"])[0]
-    name = category.name
-    category.delete()
-    await message.answer(f"Категория <<{name}>> успешно удалена",
-                         keyboard=products_keyboard.get_json())
-    await bp.state_dispenser.delete(message.from_id)
-    await manage_categories(message)
-
-
 @bp.on.message(state=AddCategory.NAME)
 @check_role(priority=80)
 async def add_category_name_handler(message: Message):
     new_category = Category(name=message.text)
     new_category.save()
-    await message.answer(f"Категория '{new_category.name}' успешно добавлена",
+    await message.answer(f"Категория <<{new_category.name}>> успешно добавлена",
                          keyboard=products_keyboard.get_json())
     await bp.state_dispenser.delete(message.from_id)
     await manage_categories(message)

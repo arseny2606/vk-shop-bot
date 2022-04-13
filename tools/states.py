@@ -12,13 +12,8 @@ class EditProduct(BaseStateGroup):
 
 
 class AddCategory(BaseStateGroup):
-    NAME = 6
+    NAME = 4
 
 
 class EditCategory(BaseStateGroup):
-    NAME = 7
-    EDIT_NAME = 8
-
-
-class DeleteCategory(BaseStateGroup):
-    NAME = 9
+    EDIT_NAME = 5
