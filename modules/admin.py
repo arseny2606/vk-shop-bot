@@ -4,7 +4,7 @@ from vkbottle import Keyboard, Text, KeyboardButtonColor, Callback
 from vkbottle.bot import Blueprint, rules, Message
 
 from db.models import Category, Product
-from tools.states import AddCategory, AddProduct, EditProduct, DeleteProduct, EditCategory, \
+from tools.states import AddCategory, AddProduct, EditProduct, EditCategory, \
     DeleteCategory
 from tools.utils import check_role
 
@@ -93,9 +93,9 @@ async def manage_products_page(message: Message):
                                    color=KeyboardButtonColor.POSITIVE).row()
     if page - 1:
         products_list_keyboard.add(
-                Text("⬅",
-                     payload={"command": "manage_products", "page": page - 1}),
-                color=KeyboardButtonColor.SECONDARY)
+            Text("⬅",
+                 payload={"command": "manage_products", "page": page - 1}),
+            color=KeyboardButtonColor.SECONDARY)
     products_list_keyboard.add(
         Text("➡",
              payload={"command": "manage_products", "page": page + 1}),
@@ -104,28 +104,6 @@ async def manage_products_page(message: Message):
                                color=KeyboardButtonColor.PRIMARY)
     await message.answer(f"Страница {page}",
                          keyboard=products_list_keyboard.get_json())
-
-
-@bp.on.message(text=["изменить продукт".capitalize(), "изменить продукт"])
-@bp.on.message(payload={"command": "edit_product"})
-@check_role(priority=80)
-async def edit_product(message: Message):
-    temp_keyboard = Keyboard(inline=True)
-    for i in Product.objects.all():
-        temp_keyboard.add(Text(i.name, payload={"product": f"{i.name}"}))
-    await message.answer(f"Выберите продукт:", keyboard=temp_keyboard.get_json())
-    await bp.state_dispenser.set(message.from_id, EditProduct.NAME)
-
-
-@bp.on.message(text=["удалить продукт".capitalize(), "удалить продукт"])
-@bp.on.message(payload={"command": "delete_product"})
-@check_role(priority=80)
-async def delete_product(message: Message):
-    temp_keyboard = Keyboard(inline=True)
-    for i in Product.objects.all():
-        temp_keyboard.add(Text(i.name, payload={"product": f"{i.name}"}))
-    await message.answer(f"Выберите продукт:", keyboard=temp_keyboard.get_json())
-    await bp.state_dispenser.set(message.from_id, DeleteProduct.NAME)
 
 
 @bp.on.message(text=["Добавить продукт", "добавить продукт"])
