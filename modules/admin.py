@@ -1,10 +1,11 @@
 import json
 
-from vkbottle import Keyboard, Text, KeyboardButtonColor
+from vkbottle import Keyboard, Text, KeyboardButtonColor, Callback
 from vkbottle.bot import Blueprint, rules, Message
 
 from db.models import Category, Product
-from tools.states import AddCategory, AddProduct, EditProduct, DeleteProduct, EditCategory, DeleteCategory
+from tools.states import AddCategory, AddProduct, EditProduct, DeleteProduct, EditCategory, \
+    DeleteCategory
 from tools.utils import check_role
 
 bp = Blueprint("admin menu")
@@ -12,9 +13,9 @@ bp.labeler.ignore_case = True
 bp.labeler.auto_rules = [rules.PeerRule(from_chat=False)]
 
 main_keyboard = Keyboard(one_time=False, inline=False)
-main_keyboard.add(Text("изменить товары".capitalize(), payload={"command": "edit_products"}),
+main_keyboard.add(Text("Управление продуктами", payload={"command": "manage_products"}),
                   color=KeyboardButtonColor.POSITIVE)
-main_keyboard.add(Text("изменить категории".capitalize(), payload={"command": "edit_categories"}),
+main_keyboard.add(Text("Управление категориями", payload={"command": "manage_categories"}),
                   color=KeyboardButtonColor.POSITIVE).row()
 main_keyboard.add(Text("Назад", payload={"command": "start"}),
                   color=KeyboardButtonColor.PRIMARY)
@@ -32,10 +33,12 @@ products_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
 categories_keyboard = Keyboard(one_time=False, inline=False)
 categories_keyboard.add(Text("Добавить категорию", payload={"command": "add_category"}),
                         color=KeyboardButtonColor.POSITIVE).row()
-categories_keyboard.add(Text("изменить категорию".capitalize(), payload={"command": "edit_category"}),
-                        color=KeyboardButtonColor.POSITIVE).row()
-categories_keyboard.add(Text("удалить категорию".capitalize(), payload={"command": "delete_category"}),
-                        color=KeyboardButtonColor.POSITIVE).row()
+categories_keyboard.add(
+    Text("изменить категорию".capitalize(), payload={"command": "edit_category"}),
+    color=KeyboardButtonColor.POSITIVE).row()
+categories_keyboard.add(
+    Text("удалить категорию".capitalize(), payload={"command": "delete_category"}),
+    color=KeyboardButtonColor.POSITIVE).row()
 categories_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
                         color=KeyboardButtonColor.PRIMARY)
 
@@ -47,13 +50,60 @@ async def admin_panel(message: Message):
     await message.answer("Админ-панель", keyboard=main_keyboard.get_json())
 
 
-@bp.on.message(text=["изменить товары".capitalize(), "изменить товары"])
-@bp.on.message(payload={"command": "edit_products"})
+@bp.on.message(text=["Управление продуктами", "управление продуктами"])
+@bp.on.message(payload={"command": "manage_products"})
 @check_role(priority=80)
-async def edit_products(message: Message):
-    products = [f"- {i.name} ({float(i.price)} RUB)\n" for i in Product.objects.all()]
-    await message.answer(f"Список продуктов:\n{''.join(products)}",
-                         keyboard=products_keyboard.get_json())
+async def manage_products(message: Message):
+    products = Product.objects.all()
+    products = products[:7]
+    products_list_keyboard = Keyboard(one_time=False, inline=False)
+    products_list_keyboard.add(Text("Добавить продукт", payload={"command": "add_product"}),
+                               color=KeyboardButtonColor.POSITIVE).row()
+    for product in products:
+        products_list_keyboard.add(Callback(f"{product.name} ({float(product.price)} RUB)",
+                                            {"command": "show_product", "product_id": product.id}),
+                                   color=KeyboardButtonColor.POSITIVE).row()
+    products_list_keyboard.add(
+        Text("➡",
+             payload={"command": "manage_products", "page": 2}),
+        color=KeyboardButtonColor.SECONDARY).row()
+    products_list_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
+                               color=KeyboardButtonColor.PRIMARY)
+    await message.answer(f"Меню управления продуктами",
+                         keyboard=products_list_keyboard.get_json())
+
+
+@bp.on.message(payload_map={"command": "manage_products", "page": int})
+@check_role(priority=80)
+async def manage_products_page(message: Message):
+    payload = json.loads(message.payload)
+    page = payload["page"]
+    products = Product.objects.all()
+    if page < 1:
+        return "Здесь ничего нет"
+    products = products[7 * (page - 1):7 * page]
+    if not products:
+        return "Здесь ничего нет"
+    products_list_keyboard = Keyboard(one_time=False, inline=False)
+    products_list_keyboard.add(Text("Добавить продукт", payload={"command": "add_product"}),
+                               color=KeyboardButtonColor.POSITIVE).row()
+    for product in products:
+        products_list_keyboard.add(Callback(f"{product.name} ({float(product.price)} RUB)",
+                                            {"command": "show_product", "product_id": product.id}),
+                                   color=KeyboardButtonColor.POSITIVE).row()
+    if page - 1:
+        products_list_keyboard.add(
+                Text("⬅",
+                     payload={"command": "manage_products", "page": page - 1}),
+                color=KeyboardButtonColor.SECONDARY)
+    products_list_keyboard.add(
+        Text("➡",
+             payload={"command": "manage_products", "page": page + 1}),
+        color=KeyboardButtonColor.SECONDARY).row()
+    products_list_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
+                               color=KeyboardButtonColor.PRIMARY)
+    await message.answer(f"Страница {page}",
+                         keyboard=products_list_keyboard.get_json())
 
 
 @bp.on.message(text=["изменить продукт".capitalize(), "изменить продукт"])
@@ -86,10 +136,10 @@ async def add_product(message: Message):
     await bp.state_dispenser.set(message.from_id, AddProduct.NAME)
 
 
-@bp.on.message(text=["изменить категории".capitalize(), "изменить категории"])
-@bp.on.message(payload={"command": "edit_categories"})
+@bp.on.message(text=["Управление категориями", "управление категориями"])
+@bp.on.message(payload={"command": "manage_categories"})
 @check_role(priority=80)
-async def edit_categories(message: Message):
+async def manage_categories(message: Message):
     categories = [f"- {i.name}\n" for i in Category.objects.all()]
     await message.answer(f"Список категорий:\n{''.join(categories)}",
                          keyboard=categories_keyboard.get_json())
@@ -125,17 +175,6 @@ async def add_category(message: Message):
     await bp.state_dispenser.set(message.from_id, AddCategory.NAME)
 
 
-@bp.on.message(state=EditProduct.NAME)
-@check_role(priority=80)
-async def edit_product_name_handler(message: Message):
-    product = Product.objects.get_or_create(name=json.loads(message.payload)["product"])[0]
-    temp_keyboard = Keyboard(inline=True)
-    temp_keyboard.add(Text("Оставить"))
-    await message.answer(f"Прошлая цена: {float(product.price)} RUB\nВведите цену:",
-                         keyboard=temp_keyboard.get_json())
-    await bp.state_dispenser.set(message.from_id, EditProduct.PRICE, product=product)
-
-
 @bp.on.message(state=EditProduct.PRICE)
 @check_role(priority=80)
 async def edit_product_price_handler(message: Message):
@@ -146,19 +185,7 @@ async def edit_product_price_handler(message: Message):
     await message.answer(f"Продукт <<{product.name}>> успешно изменён",
                          keyboard=products_keyboard.get_json())
     await bp.state_dispenser.delete(message.from_id)
-    await edit_products(message)
-
-
-@bp.on.message(state=DeleteProduct.NAME)
-@check_role(priority=80)
-async def delete_product_name_handler(message: Message):
-    product = Product.objects.get_or_create(name=json.loads(message.payload)["product"])[0]
-    name = product.name
-    product.delete()
-    await message.answer(f"Продукт <<{name}>> успешно удалён",
-                         keyboard=products_keyboard.get_json())
-    await bp.state_dispenser.delete(message.from_id)
-    await edit_products(message)
+    await manage_products(message)
 
 
 @bp.on.message(state=AddProduct.NAME)
@@ -191,7 +218,7 @@ async def add_product_category_handler(message: Message):
     await message.answer(f'Продукт <<{new_product.name}>> успешно добавлен',
                          keyboard=products_keyboard.get_json())
     await bp.state_dispenser.delete(message.from_id)
-    await edit_products(message)
+    await manage_products(message)
 
 
 @bp.on.message(state=EditCategory.NAME)
@@ -215,7 +242,7 @@ async def edit_category_name_handler(message: Message):
     await message.answer(f"Категория <<{category.name}>> успешно изменена",
                          keyboard=categories_keyboard.get_json())
     await bp.state_dispenser.delete(message.from_id)
-    await edit_categories(message)
+    await manage_categories(message)
 
 
 @bp.on.message(state=DeleteCategory.NAME)
@@ -227,7 +254,7 @@ async def delete_category_name_handler(message: Message):
     await message.answer(f"Категория <<{name}>> успешно удалена",
                          keyboard=products_keyboard.get_json())
     await bp.state_dispenser.delete(message.from_id)
-    await edit_categories(message)
+    await manage_categories(message)
 
 
 @bp.on.message(state=AddCategory.NAME)
@@ -238,4 +265,4 @@ async def add_category_name_handler(message: Message):
     await message.answer(f"Категория '{new_category.name}' успешно добавлена",
                          keyboard=products_keyboard.get_json())
     await bp.state_dispenser.delete(message.from_id)
-    await edit_categories(message)
+    await manage_categories(message)

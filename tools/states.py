@@ -8,12 +8,7 @@ class AddProduct(BaseStateGroup):
 
 
 class EditProduct(BaseStateGroup):
-    NAME = 3
-    PRICE = 4
-
-
-class DeleteProduct(BaseStateGroup):
-    NAME = 5
+    PRICE = 3
 
 
 class AddCategory(BaseStateGroup):
