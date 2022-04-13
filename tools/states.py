@@ -10,7 +10,10 @@ class AddProduct(BaseStateGroup):
 class EditProduct(BaseStateGroup):
     NAME = 3
     PRICE = 4
-    CATEGORY = 5
+
+
+class DeleteProduct(BaseStateGroup):
+    NAME = 5
 
 
 class AddCategory(BaseStateGroup):

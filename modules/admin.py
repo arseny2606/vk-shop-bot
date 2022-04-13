@@ -4,7 +4,7 @@ from vkbottle import Keyboard, Text, KeyboardButtonColor
 from vkbottle.bot import Blueprint, rules, Message
 
 from db.models import Category, Product
-from tools.states import AddCategory, AddProduct, EditProduct
+from tools.states import AddCategory, AddProduct, EditProduct, DeleteProduct
 from tools.utils import check_role
 
 bp = Blueprint("admin menu")
@@ -23,6 +23,8 @@ products_keyboard = Keyboard(one_time=False, inline=False)
 products_keyboard.add(Text("Добавить продукт", payload={"command": "add_product"}),
                       color=KeyboardButtonColor.POSITIVE).row()
 products_keyboard.add(Text("изменить продукт".capitalize(), payload={"command": "edit_product"}),
+                      color=KeyboardButtonColor.POSITIVE).row()
+products_keyboard.add(Text("удалить продукт".capitalize(), payload={"command": "delete_product"}),
                       color=KeyboardButtonColor.POSITIVE).row()
 products_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
                       color=KeyboardButtonColor.PRIMARY)
@@ -80,6 +82,29 @@ async def edit_product_price_handler(message: Message):
         product.price = float(message.text)
         product.save()
     await message.answer(f"Продукт <<{product.name}>> успешно изменён",
+                         keyboard=products_keyboard.get_json())
+    await bp.state_dispenser.delete(message.from_id)
+    await edit_products(message)
+
+
+@bp.on.message(text=["удалить продукт".capitalize(), "удалить продукт"])
+@bp.on.message(payload={"command": "delete_product"})
+@check_role(priority=80)
+async def delete_product(message: Message):
+    temp_keyboard = Keyboard(inline=True)
+    for i in Product.objects.all():
+        temp_keyboard.add(Text(i.name, payload={"product": f"{i.name}"}))
+    await message.answer(f"Выберите продукт:", keyboard=temp_keyboard.get_json())
+    await bp.state_dispenser.set(message.from_id, DeleteProduct.NAME)
+
+
+@bp.on.message(state=DeleteProduct.NAME)
+@check_role(priority=80)
+async def edit_product_name_handler(message: Message):
+    product = Product.objects.get_or_create(name=json.loads(message.payload)["product"])[0]
+    name = product.name
+    product.delete()
+    await message.answer(f"Продукт <<{name}>> успешно удалён",
                          keyboard=products_keyboard.get_json())
     await bp.state_dispenser.delete(message.from_id)
     await edit_products(message)
