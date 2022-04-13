@@ -7,5 +7,11 @@ class AddProduct(BaseStateGroup):
     CATEGORY = 2
 
 
-class AddCategory(BaseStateGroup):
+class EditProduct(BaseStateGroup):
     NAME = 3
+    PRICE = 4
+    CATEGORY = 5
+
+
+class AddCategory(BaseStateGroup):
+    NAME = 6

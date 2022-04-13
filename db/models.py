@@ -44,7 +44,7 @@ class Category(models.Model):
 
 class Product(models.Model):
     name = models.CharField(max_length=200)
-    price = models.IntegerField(default=1)
+    price = models.FloatField(default=1)
     category = models.ForeignKey(Category, on_delete=models.SET_DEFAULT, default="none")
 
     def __str__(self):
