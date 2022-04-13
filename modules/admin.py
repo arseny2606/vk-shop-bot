@@ -67,6 +67,64 @@ async def edit_product(message: Message):
     await bp.state_dispenser.set(message.from_id, EditProduct.NAME)
 
 
+@bp.on.message(text=["удалить продукт".capitalize(), "удалить продукт"])
+@bp.on.message(payload={"command": "delete_product"})
+@check_role(priority=80)
+async def delete_product(message: Message):
+    temp_keyboard = Keyboard(inline=True)
+    for i in Product.objects.all():
+        temp_keyboard.add(Text(i.name, payload={"product": f"{i.name}"}))
+    await message.answer(f"Выберите продукт:", keyboard=temp_keyboard.get_json())
+    await bp.state_dispenser.set(message.from_id, DeleteProduct.NAME)
+
+
+@bp.on.message(text=["Добавить продукт", "добавить продукт"])
+@bp.on.message(payload={"command": "add_product"})
+@check_role(priority=80)
+async def add_product(message: Message):
+    await message.answer(f"Введите имя продукта:", keyboard=products_keyboard.get_json())
+    await bp.state_dispenser.set(message.from_id, AddProduct.NAME)
+
+
+@bp.on.message(text=["изменить категории".capitalize(), "изменить категории"])
+@bp.on.message(payload={"command": "edit_categories"})
+@check_role(priority=80)
+async def edit_categories(message: Message):
+    categories = [f"- {i.name}\n" for i in Category.objects.all()]
+    await message.answer(f"Список категорий:\n{''.join(categories)}",
+                         keyboard=categories_keyboard.get_json())
+
+
+@bp.on.message(text=["изменить категорию".capitalize(), "изменить категорию"])
+@bp.on.message(payload={"command": "edit_category"})
+@check_role(priority=80)
+async def edit_category(message: Message):
+    temp_keyboard = Keyboard(inline=True)
+    for i in Category.objects.all():
+        temp_keyboard.add(Text(i.name, payload={"category": f"{i.name}"}))
+    await message.answer(f"Выберите категорию:", keyboard=temp_keyboard.get_json())
+    await bp.state_dispenser.set(message.from_id, EditCategory.NAME)
+
+
+@bp.on.message(text=["удалить категорию".capitalize(), "удалить категорию"])
+@bp.on.message(payload={"command": "delete_category"})
+@check_role(priority=80)
+async def delete_category(message: Message):
+    temp_keyboard = Keyboard(inline=True)
+    for i in Category.objects.all():
+        temp_keyboard.add(Text(i.name, payload={"category": f"{i.name}"}))
+    await message.answer(f"Выберите категорию:", keyboard=temp_keyboard.get_json())
+    await bp.state_dispenser.set(message.from_id, DeleteCategory.NAME)
+
+
+@bp.on.message(text=["Добавить категорию", "добавить категорию"])
+@bp.on.message(payload={"command": "add_category"})
+@check_role(priority=80)
+async def add_category(message: Message):
+    await message.answer(f"Введите имя категории:", keyboard=categories_keyboard.get_json())
+    await bp.state_dispenser.set(message.from_id, AddCategory.NAME)
+
+
 @bp.on.message(state=EditProduct.NAME)
 @check_role(priority=80)
 async def edit_product_name_handler(message: Message):
@@ -91,17 +149,6 @@ async def edit_product_price_handler(message: Message):
     await edit_products(message)
 
 
-@bp.on.message(text=["удалить продукт".capitalize(), "удалить продукт"])
-@bp.on.message(payload={"command": "delete_product"})
-@check_role(priority=80)
-async def delete_product(message: Message):
-    temp_keyboard = Keyboard(inline=True)
-    for i in Product.objects.all():
-        temp_keyboard.add(Text(i.name, payload={"product": f"{i.name}"}))
-    await message.answer(f"Выберите продукт:", keyboard=temp_keyboard.get_json())
-    await bp.state_dispenser.set(message.from_id, DeleteProduct.NAME)
-
-
 @bp.on.message(state=DeleteProduct.NAME)
 @check_role(priority=80)
 async def delete_product_name_handler(message: Message):
@@ -112,14 +159,6 @@ async def delete_product_name_handler(message: Message):
                          keyboard=products_keyboard.get_json())
     await bp.state_dispenser.delete(message.from_id)
     await edit_products(message)
-
-
-@bp.on.message(text=["Добавить продукт", "добавить продукт"])
-@bp.on.message(payload={"command": "add_product"})
-@check_role(priority=80)
-async def add_product(message: Message):
-    await message.answer(f"Введите имя продукта:", keyboard=products_keyboard.get_json())
-    await bp.state_dispenser.set(message.from_id, AddProduct.NAME)
 
 
 @bp.on.message(state=AddProduct.NAME)
@@ -155,26 +194,6 @@ async def add_product_category_handler(message: Message):
     await edit_products(message)
 
 
-@bp.on.message(text=["изменить категории".capitalize(), "изменить категории"])
-@bp.on.message(payload={"command": "edit_categories"})
-@check_role(priority=80)
-async def edit_categories(message: Message):
-    categories = [f"- {i.name}\n" for i in Category.objects.all()]
-    await message.answer(f"Список категорий:\n{''.join(categories)}",
-                         keyboard=categories_keyboard.get_json())
-
-
-@bp.on.message(text=["изменить категорию".capitalize(), "изменить категорию"])
-@bp.on.message(payload={"command": "edit_category"})
-@check_role(priority=80)
-async def edit_category(message: Message):
-    temp_keyboard = Keyboard(inline=True)
-    for i in Category.objects.all():
-        temp_keyboard.add(Text(i.name, payload={"category": f"{i.name}"}))
-    await message.answer(f"Выберите категорию:", keyboard=temp_keyboard.get_json())
-    await bp.state_dispenser.set(message.from_id, EditCategory.NAME)
-
-
 @bp.on.message(state=EditCategory.NAME)
 @check_role(priority=80)
 async def category_name_handler(message: Message):
@@ -199,17 +218,6 @@ async def edit_category_name_handler(message: Message):
     await edit_categories(message)
 
 
-@bp.on.message(text=["удалить категорию".capitalize(), "удалить категорию"])
-@bp.on.message(payload={"command": "delete_category"})
-@check_role(priority=80)
-async def delete_category(message: Message):
-    temp_keyboard = Keyboard(inline=True)
-    for i in Category.objects.all():
-        temp_keyboard.add(Text(i.name, payload={"category": f"{i.name}"}))
-    await message.answer(f"Выберите категорию:", keyboard=temp_keyboard.get_json())
-    await bp.state_dispenser.set(message.from_id, DeleteCategory.NAME)
-
-
 @bp.on.message(state=DeleteCategory.NAME)
 @check_role(priority=80)
 async def delete_category_name_handler(message: Message):
@@ -220,14 +228,6 @@ async def delete_category_name_handler(message: Message):
                          keyboard=products_keyboard.get_json())
     await bp.state_dispenser.delete(message.from_id)
     await edit_categories(message)
-
-
-@bp.on.message(text=["Добавить категорию", "добавить категорию"])
-@bp.on.message(payload={"command": "add_category"})
-@check_role(priority=80)
-async def add_category(message: Message):
-    await message.answer(f"Введите имя категории:", keyboard=categories_keyboard.get_json())
-    await bp.state_dispenser.set(message.from_id, AddCategory.NAME)
 
 
 @bp.on.message(state=AddCategory.NAME)
