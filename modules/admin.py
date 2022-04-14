@@ -4,6 +4,7 @@ from vkbottle import Keyboard, Text, KeyboardButtonColor, Callback
 from vkbottle.bot import Blueprint, rules, Message
 
 from db.models import Category, Product
+from tools.keyboard_generators import generate_products_keyboard
 from tools.states import AddCategory, AddProduct, EditProduct, EditCategory
 from tools.utils import check_role
 
@@ -53,21 +54,9 @@ async def admin_panel(message: Message):
 @bp.on.message(payload={"command": "manage_products"})
 @check_role(priority=80)
 async def manage_products(message: Message):
-    products = Product.objects.all()
-    products = products[:7]
-    products_list_keyboard = Keyboard(one_time=False, inline=False)
-    products_list_keyboard.add(Text("Добавить продукт", payload={"command": "add_product"}),
-                               color=KeyboardButtonColor.PRIMARY).row()
-    for product in products:
-        products_list_keyboard.add(Callback(f"{product.name} ({float(product.price)} RUB)",
-                                            {"command": "show_product", "product_id": product.id}),
-                                   color=KeyboardButtonColor.POSITIVE).row()
-    products_list_keyboard.add(
-        Text("➡",
-             payload={"command": "manage_products", "page": 2}),
-        color=KeyboardButtonColor.SECONDARY).row()
-    products_list_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
-                               color=KeyboardButtonColor.PRIMARY)
+    products_list_keyboard = generate_products_keyboard()
+    if products_list_keyboard is None:
+        return "Здесь ничего нет."
     await message.answer(f"Меню управления продуктами",
                          keyboard=products_list_keyboard.get_json())
 
@@ -77,30 +66,9 @@ async def manage_products(message: Message):
 async def manage_products_page(message: Message):
     payload = json.loads(message.payload)
     page = payload["page"]
-    products = Product.objects.all()
-    if page < 1:
-        return "Здесь ничего нет"
-    products = products[7 * (page - 1):7 * page]
-    if not products:
-        return "Здесь ничего нет"
-    products_list_keyboard = Keyboard(one_time=False, inline=False)
-    products_list_keyboard.add(Text("Добавить продукт", payload={"command": "add_product"}),
-                               color=KeyboardButtonColor.PRIMARY).row()
-    for product in products:
-        products_list_keyboard.add(Callback(f"{product.name} ({float(product.price)} RUB)",
-                                            {"command": "show_product", "product_id": product.id}),
-                                   color=KeyboardButtonColor.POSITIVE).row()
-    if page - 1:
-        products_list_keyboard.add(
-            Text("⬅",
-                 payload={"command": "manage_products", "page": page - 1}),
-            color=KeyboardButtonColor.SECONDARY)
-    products_list_keyboard.add(
-        Text("➡",
-             payload={"command": "manage_products", "page": page + 1}),
-        color=KeyboardButtonColor.SECONDARY).row()
-    products_list_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
-                               color=KeyboardButtonColor.PRIMARY)
+    products_list_keyboard = generate_products_keyboard(page)
+    if products_list_keyboard is None:
+        return "Здесь ничего нет."
     await message.answer(f"Страница {page}",
                          keyboard=products_list_keyboard.get_json())
 
