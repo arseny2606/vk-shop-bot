@@ -2,9 +2,10 @@ from vkbottle import GroupEventType
 from vkbottle import Keyboard, Callback, KeyboardButtonColor, Text
 from vkbottle.bot import Blueprint, MessageEvent
 
-from db.models import Product, Category
+from db.models import Product, Category, User
 from tools.keyboard_generators import generate_products_keyboard, generate_categories_keyboard
-from tools.states import EditProduct, EditCategory
+from tools.qiwi import check_payment
+from tools.states import EditProduct, EditCategory, AddBalance
 
 bp = Blueprint("callback buttons")
 
@@ -154,6 +155,29 @@ async def handle_callback(event: MessageEvent):
                                  message="Категория удалена.",
                                  keyboard=generate_categories_keyboard(payload.get('from_page', 1)))
         return
+    if command == "check_payment":
+        user_profile = User.objects.get_or_create(user_id=event.object.user_id)[0]
+        billId = payload.get("billId")
+        if billId is None:
+            await event.show_snackbar("Счёт не найден.")
+            return
+        payment = await check_payment(billId)
+        status = payment["status"]["value"]
+        state = await bp.state_dispenser.get(event.object.peer_id)
+        if state is None:
+            await event.show_snackbar("Счёт не найден.")
+            return
+        if status == "PAID" and state.validate_state(AddBalance.CHECK):
+            amount = float(payment["amount"]["value"])
+            user_profile.balance += amount
+            user_profile.save()
+            await event.show_snackbar("Ваш баланс успешно пополнен.")
+            await bp.state_dispenser.delete(event.object.peer_id)
+            await event.send_message(f"Профиль\nБаланс: {user_profile.balance} RUB")
+        elif status == "WAITING":
+            await event.show_snackbar("Счёт не оплачен.")
+        return
+
     await bp.api.messages.send_message_event_answer(event_id=event.event_id,
                                                     user_id=event.user_id,
                                                     peer_id=event.peer_id)

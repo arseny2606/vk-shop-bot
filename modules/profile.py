@@ -1,12 +1,9 @@
-import json
-
-
-from vkbottle import Keyboard, Text, KeyboardButtonColor, OpenLink
+from vkbottle import Keyboard, Text, KeyboardButtonColor, OpenLink, Callback
 from vkbottle.bot import Blueprint, rules, Message
 
 from db.models import User
 from tools.states import AddBalance
-from tools.qiwi import create_payment, check_payment
+from tools.qiwi import create_payment
 
 bp = Blueprint("profile menu")
 bp.labeler.ignore_case = True
@@ -42,22 +39,6 @@ async def add_balance_amount_handler(message: Message):
     temp_keyboard.add(OpenLink(payment["payUrl"], "Оплатить"))
     await message.answer(f"Оплатите счёт по нажатию кнопки <<Оплатить>>", keyboard=temp_keyboard.get_json())
     temp_keyboard = Keyboard(inline=True)
-    temp_keyboard.add(Text("Проверить оплату", payload={"command": "check_payment", "billId": payment["billId"]}))
+    temp_keyboard.add(Callback("Проверить оплату", payload={"command": "check_payment", "billId": payment["billId"]}))
     await message.answer(f"После оплаты, нажмите кнопку <<Проверить оплату>>", keyboard=temp_keyboard.get_json())
     await bp.state_dispenser.set(message.from_id, AddBalance.CHECK)
-
-
-@bp.on.message(state=AddBalance.CHECK)
-async def check_payment_handler(message: Message):
-    user_profile = User.objects.get_or_create(user_id=message.from_id)[0]
-    payload = json.loads(message.payload)
-    billId = payload["billId"]
-    payment = await check_payment(billId)
-    status = payment["status"]["value"]
-    if status == "PAID":
-        amount = float(payment["amount"]["value"])
-        user_profile.balance += amount
-        user_profile.save()
-        await message.answer("Ваш баланс успешно пополнен", keyboard=main_keyboard.get_json())
-        await bp.state_dispenser.delete(message.from_id)
-        await profile(message)
