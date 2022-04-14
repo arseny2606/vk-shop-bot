@@ -53,8 +53,8 @@ async def admin_panel(message: Message):
 @bp.on.message(text=["Управление продуктами", "управление продуктами"])
 @bp.on.message(payload={"command": "manage_products"})
 @check_role(priority=80)
-async def manage_products(message: Message):
-    products_list_keyboard = generate_products_keyboard()
+async def manage_products(message: Message, page: int = 1):
+    products_list_keyboard = generate_products_keyboard(page)
     if products_list_keyboard is None:
         return "Здесь ничего нет."
     await message.answer(f"Меню управления продуктами",
@@ -116,13 +116,14 @@ async def add_category(message: Message):
 @check_role(priority=80)
 async def edit_product_price_handler(message: Message):
     product = message.state_peer.payload['product']
+    page = message.state_peer.payload.get('from_page', 1)
     if message.text != "Оставить":
         product.price = float(message.text)
         product.save()
     await message.answer(f"Продукт <<{product.name}>> успешно изменён",
                          keyboard=products_keyboard.get_json())
+    await manage_products(message, page)
     await bp.state_dispenser.delete(message.from_id)
-    await manage_products(message)
 
 
 @bp.on.message(state=AddProduct.NAME)

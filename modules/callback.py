@@ -1,10 +1,11 @@
 import json
 
+from vkbottle import GroupEventType
 from vkbottle import Keyboard, Callback, KeyboardButtonColor, Text
 from vkbottle.bot import Blueprint, MessageEvent
-from vkbottle import GroupEventType
 
 from db.models import Product, Category
+from tools.keyboard_generators import generate_products_keyboard
 from tools.states import EditProduct, EditCategory
 
 bp = Blueprint("callback buttons")
@@ -37,10 +38,12 @@ async def handle_callback(event: MessageEvent):
             return
         category_keyboard = Keyboard(one_time=False, inline=True)
         category_keyboard.add(
-            Callback("Изменить", {"command": "edit_product", "product_id": product_id
+            Callback("Изменить", {"command": "edit_product", "product_id": product_id,
+                                  "from_page": payload.get("from_page", 1)
                                   }), color=KeyboardButtonColor.PRIMARY).row()
         category_keyboard.add(
-            Callback("Удалить", {"command": "delete_product", "product_id": product_id
+            Callback("Удалить", {"command": "delete_product", "product_id": product_id,
+                                 "from_page": payload.get("from_page", 1)
                                  }), color=KeyboardButtonColor.NEGATIVE)
         await event.send_message(message=f"Продукт #{product_id}:\n"
                                          f"Название: {product.name}\n"
@@ -65,7 +68,8 @@ async def handle_callback(event: MessageEvent):
         temp_keyboard.add(Text("Оставить"))
         await event.send_message(message=f"Прошлая цена: {float(product.price)} RUB\nВведите цену:",
                                  keyboard=temp_keyboard.get_json())
-        await bp.state_dispenser.set(event.user_id, EditProduct.PRICE, product=product)
+        await bp.state_dispenser.set(event.user_id, EditProduct.PRICE, product=product,
+                                     from_page=payload["from_page"])
     if command == "delete_product":
         product_id = payload.get("product_id")
         if product_id is None:
@@ -82,7 +86,8 @@ async def handle_callback(event: MessageEvent):
         await event.show_snackbar(f"Продукт {name} успешно удалён")
         await event.edit_message(peer_id=event.peer_id,
                                  conversation_message_id=event.conversation_message_id,
-                                 message="Продукт удалён.", keyboard=json.dumps({}))
+                                 message="Продукт удалён.",
+                                 keyboard=generate_products_keyboard(payload.get("from_page", 1)))
         return
     if command == "show_category":
         category_id = payload.get("category_id")
