@@ -4,7 +4,7 @@ from vkbottle import Keyboard, Text, KeyboardButtonColor, Callback
 from vkbottle.bot import Blueprint, rules, Message
 
 from db.models import Category, Product
-from tools.keyboard_generators import generate_products_keyboard
+from tools.keyboard_generators import generate_products_keyboard, generate_categories_keyboard
 from tools.states import AddCategory, AddProduct, EditProduct, EditCategory
 from tools.utils import check_role
 
@@ -85,22 +85,9 @@ async def add_product(message: Message):
 @bp.on.message(payload={"command": "manage_categories"})
 @check_role(priority=80)
 async def manage_categories(message: Message):
-    categories = Category.objects.all()
-    categories = categories[:7]
-    categories_list_keyboard = Keyboard(one_time=False, inline=False)
-    categories_list_keyboard.add(Text("Добавить категорию", payload={"command": "add_category"}),
-                                 color=KeyboardButtonColor.PRIMARY).row()
-    for category in categories:
-        categories_list_keyboard.add(Callback(f"{category.name}",
-                                              {"command": "show_category",
-                                               "category_id": category.id}),
-                                     color=KeyboardButtonColor.POSITIVE).row()
-    categories_list_keyboard.add(
-        Text("➡",
-             payload={"command": "manage_categories", "page": 2}),
-        color=KeyboardButtonColor.SECONDARY).row()
-    categories_list_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
-                                 color=KeyboardButtonColor.PRIMARY)
+    categories_list_keyboard = generate_categories_keyboard()
+    if categories_list_keyboard is None:
+        return "Здесь ничего нет."
     await message.answer(f"Меню управления категориями.",
                          keyboard=categories_list_keyboard.get_json())
 
@@ -110,31 +97,9 @@ async def manage_categories(message: Message):
 async def manage_categories_page(message: Message):
     payload = json.loads(message.payload)
     page = payload["page"]
-    categories = Category.objects.all()
-    if page < 1:
-        return "Здесь ничего нет"
-    categories = categories[7 * (page - 1):7 * page]
-    if not categories:
-        return "Здесь ничего нет"
-    categories_list_keyboard = Keyboard(one_time=False, inline=False)
-    categories_list_keyboard.add(Text("Добавить категорию", payload={"command": "add_category"}),
-                                 color=KeyboardButtonColor.PRIMARY).row()
-    for category in categories:
-        categories_list_keyboard.add(Callback(f"{category.name}",
-                                              {"command": "show_category",
-                                               "category_id": category.id}),
-                                     color=KeyboardButtonColor.POSITIVE).row()
-    if page - 1:
-        categories_list_keyboard.add(
-            Text("⬅",
-                 payload={"command": "manage_categories", "page": page - 1}),
-            color=KeyboardButtonColor.SECONDARY)
-    categories_list_keyboard.add(
-        Text("➡",
-             payload={"command": "manage_categories", "page": 2}),
-        color=KeyboardButtonColor.SECONDARY).row()
-    categories_list_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
-                                 color=KeyboardButtonColor.PRIMARY)
+    categories_list_keyboard = generate_categories_keyboard(page)
+    if categories_list_keyboard is None:
+        return "Здесь ничего нет."
     await message.answer(f"Страница {page}",
                          keyboard=categories_list_keyboard.get_json())
 
