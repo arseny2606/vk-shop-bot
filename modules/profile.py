@@ -44,10 +44,10 @@ async def add_balance_amount_handler(message: Message):
     temp_keyboard = Keyboard(inline=True)
     temp_keyboard.add(Text("Проверить оплату", payload={"command": "check_payment", "billId": payment["billId"]}))
     await message.answer(f"После оплаты, нажмите кнопку <<Проверить оплату>>", keyboard=temp_keyboard.get_json())
-    await bp.state_dispenser.delete(message.from_id)
+    await bp.state_dispenser.set(message.from_id, AddBalance.CHECK)
 
 
-@bp.on.message(payload_map={"command": "check_payment", "billId": str})
+@bp.on.message(state=AddBalance.CHECK)
 async def check_payment_handler(message: Message):
     user_profile = User.objects.get_or_create(user_id=message.from_id)[0]
     payload = json.loads(message.payload)
@@ -59,4 +59,5 @@ async def check_payment_handler(message: Message):
         user_profile.balance += amount
         user_profile.save()
         await message.answer("Ваш баланс успешно пополнен", keyboard=main_keyboard.get_json())
+        await bp.state_dispenser.delete(message.from_id)
         await profile(message)

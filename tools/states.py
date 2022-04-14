@@ -21,3 +21,4 @@ class EditCategory(BaseStateGroup):
 
 class AddBalance(BaseStateGroup):
     AMOUNT = 6
+    CHECK = 7

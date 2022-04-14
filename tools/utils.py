@@ -1,5 +1,6 @@
 from functools import wraps
 
+from typing import Tuple
 from vkbottle import Bot
 from vkbottle.bot import Message
 
@@ -21,7 +22,7 @@ async def putUser(link: str) -> int:
         await bot.api.utils.resolve_screen_name(screen_name=link)).object_id
 
 
-async def getName(uid: int, name_case: str = "nom") -> tuple[str, str]:
+async def getName(uid: int, name_case: str = "nom") -> Tuple[str, str]:
     if uid < 0:
         group_data = (await bot.api.groups.get_by_id(group_ids=[str(-uid)]))[0]
         return "Сообщество", f"<<{group_data.name}>>"
