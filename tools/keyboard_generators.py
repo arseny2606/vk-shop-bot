@@ -17,7 +17,8 @@ def generate_products_keyboard(page: int = 1) -> Optional[Keyboard]:
                                color=KeyboardButtonColor.PRIMARY).row()
     for product in products:
         products_list_keyboard.add(Callback(f"{product.name} ({float(product.price)} RUB)",
-                                            {"command": "show_product", "product_id": product.id}),
+                                            {"command": "show_product", "product_id": product.id,
+                                             "from_page": page}),
                                    color=KeyboardButtonColor.POSITIVE).row()
     if page - 1:
         products_list_keyboard.add(
@@ -46,7 +47,8 @@ def generate_categories_keyboard(page: int = 1) -> Optional[Keyboard]:
     for category in categories:
         categories_list_keyboard.add(Callback(f"{category.name}",
                                               {"command": "show_category",
-                                               "category_id": category.id}),
+                                               "category_id": category.id,
+                                               "from_page": page}),
                                      color=KeyboardButtonColor.POSITIVE).row()
     if page - 1:
         categories_list_keyboard.add(
