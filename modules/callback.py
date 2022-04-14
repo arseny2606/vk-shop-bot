@@ -1,11 +1,9 @@
-import json
-
 from vkbottle import GroupEventType
 from vkbottle import Keyboard, Callback, KeyboardButtonColor, Text
 from vkbottle.bot import Blueprint, MessageEvent
 
 from db.models import Product, Category
-from tools.keyboard_generators import generate_products_keyboard
+from tools.keyboard_generators import generate_products_keyboard, generate_categories_keyboard
 from tools.states import EditProduct, EditCategory
 
 bp = Blueprint("callback buttons")
@@ -102,10 +100,12 @@ async def handle_callback(event: MessageEvent):
             return
         category_keyboard = Keyboard(one_time=False, inline=True)
         category_keyboard.add(
-            Callback("Изменить", {"command": "edit_category", "category_id": category_id
+            Callback("Изменить", {"command": "edit_category", "category_id": category_id,
+                                  "from_page": payload.get("from_page", 1)
                                   }), color=KeyboardButtonColor.PRIMARY).row()
         category_keyboard.add(
-            Callback("Удалить", {"command": "delete_category", "category_id": category_id
+            Callback("Удалить", {"command": "delete_category", "category_id": category_id,
+                                 "from_page": payload.get("from_page", 1)
                                  }), color=KeyboardButtonColor.NEGATIVE)
         await event.send_message(message=f"Категория #{category_id}:\n"
                                          f"Название: {category.name}",
@@ -129,7 +129,8 @@ async def handle_callback(event: MessageEvent):
         temp_keyboard.add(Text("Оставить"))
         await event.send_message(message=f"Прошлое имя: <<{category.name}>>\nВведите новое имя:",
                                  keyboard=temp_keyboard.get_json())
-        await bp.state_dispenser.set(event.user_id, EditCategory.EDIT_NAME, category=category)
+        await bp.state_dispenser.set(event.user_id, EditCategory.EDIT_NAME, category=category,
+                                     from_page=payload.get('from_page', 1))
         await bp.api.messages.send_message_event_answer(event_id=event.event_id,
                                                         user_id=event.user_id,
                                                         peer_id=event.peer_id)
@@ -150,7 +151,8 @@ async def handle_callback(event: MessageEvent):
         await event.show_snackbar(f"Категория {name} успешно удалена")
         await event.edit_message(peer_id=event.peer_id,
                                  conversation_message_id=event.conversation_message_id,
-                                 message="Категория удалена.", keyboard=json.dumps({}))
+                                 message="Категория удалена.",
+                                 keyboard=generate_categories_keyboard(payload.get('from_page', 1)))
         return
     await bp.api.messages.send_message_event_answer(event_id=event.event_id,
                                                     user_id=event.user_id,

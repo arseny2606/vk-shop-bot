@@ -84,8 +84,8 @@ async def add_product(message: Message):
 @bp.on.message(text=["Управление категориями", "управление категориями"])
 @bp.on.message(payload={"command": "manage_categories"})
 @check_role(priority=80)
-async def manage_categories(message: Message):
-    categories_list_keyboard = generate_categories_keyboard()
+async def manage_categories(message: Message, page: int = 1):
+    categories_list_keyboard = generate_categories_keyboard(page)
     if categories_list_keyboard is None:
         return "Здесь ничего нет."
     await message.answer(f"Меню управления категориями.",
@@ -120,8 +120,7 @@ async def edit_product_price_handler(message: Message):
     if message.text != "Оставить":
         product.price = float(message.text)
         product.save()
-    await message.answer(f"Продукт <<{product.name}>> успешно изменён",
-                         keyboard=products_keyboard.get_json())
+    await message.answer(f"Продукт <<{product.name}>> успешно изменён")
     await manage_products(message, page)
     await bp.state_dispenser.delete(message.from_id)
 
@@ -163,13 +162,13 @@ async def add_product_category_handler(message: Message):
 @check_role(priority=80)
 async def edit_category_name_handler(message: Message):
     category = message.state_peer.payload['category']
+    page = message.state_peer.payload.get('from_page', 1)
     if message.text != "Оставить":
         category.name = message.text
         category.save()
-    await message.answer(f"Категория <<{category.name}>> успешно изменена",
-                         keyboard=categories_keyboard.get_json())
+    await message.answer(f"Категория <<{category.name}>> успешно изменена")
+    await manage_categories(message, page)
     await bp.state_dispenser.delete(message.from_id)
-    await manage_categories(message)
 
 
 @bp.on.message(state=AddCategory.NAME)
