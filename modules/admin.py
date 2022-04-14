@@ -22,9 +22,9 @@ main_keyboard.add(Text("Назад", payload={"command": "start"}),
 products_keyboard = Keyboard(one_time=False, inline=False)
 products_keyboard.add(Text("Добавить продукт", payload={"command": "add_product"}),
                       color=KeyboardButtonColor.POSITIVE).row()
-products_keyboard.add(Text("изменить продукт".capitalize(), payload={"command": "edit_product"}),
+products_keyboard.add(Text("Изменить продукт", payload={"command": "edit_product"}),
                       color=KeyboardButtonColor.POSITIVE).row()
-products_keyboard.add(Text("удалить продукт".capitalize(), payload={"command": "delete_product"}),
+products_keyboard.add(Text("Удалить продукт", payload={"command": "delete_product"}),
                       color=KeyboardButtonColor.POSITIVE).row()
 products_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
                       color=KeyboardButtonColor.PRIMARY)
@@ -33,10 +33,10 @@ categories_keyboard = Keyboard(one_time=False, inline=False)
 categories_keyboard.add(Text("Добавить категорию", payload={"command": "add_category"}),
                         color=KeyboardButtonColor.POSITIVE).row()
 categories_keyboard.add(
-    Text("изменить категорию".capitalize(), payload={"command": "edit_category"}),
+    Text("Изменить категорию", payload={"command": "edit_category"}),
     color=KeyboardButtonColor.POSITIVE).row()
 categories_keyboard.add(
-    Text("удалить категорию".capitalize(), payload={"command": "delete_category"}),
+    Text("Удалить категорию", payload={"command": "delete_category"}),
     color=KeyboardButtonColor.POSITIVE).row()
 categories_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
                         color=KeyboardButtonColor.PRIMARY)

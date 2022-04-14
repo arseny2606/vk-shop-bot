@@ -1,4 +1,4 @@
-from vkbottle_types import BaseStateGroup
+from vkbottle import BaseStateGroup
 
 
 class AddProduct(BaseStateGroup):
