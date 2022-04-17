@@ -1,3 +1,5 @@
+from random import randint
+
 from vkbottle import GroupEventType, PhotoMessageUploader
 from vkbottle import Keyboard, Callback, KeyboardButtonColor, Text
 from vkbottle.bot import Blueprint, MessageEvent
@@ -235,10 +237,7 @@ async def handle_callback(event: MessageEvent):
             await event.show_snackbar("Такого продукта не существует.")
             return
         if user_profile.balance < product.price:
-            await event.send_message(f"Недостаточный баланс.")
-            await bp.api.messages.send_message_event_answer(event_id=event.event_id,
-                                                            user_id=event.user_id,
-                                                            peer_id=event.peer_id)
+            await event.show_snackbar(f"Недостаточный баланс.")
             return
 
         user_profile.balance -= product.price
@@ -247,6 +246,10 @@ async def handle_callback(event: MessageEvent):
                                  conversation_message_id=event.conversation_message_id,
                                  message="Товар куплен.")
         await event.show_snackbar("Товар успешно куплен.")
+        admins = [admin.user_id for admin in User.objects.filter(role__priority__gte=80).all()]
+        await bp.api.messages.send(user_ids=admins,
+                                   random_id=randint(1, 99999999),
+                                   message=f"{user_profile.get_push()} купил {product.name}.")
         await bp.api.messages.send_message_event_answer(event_id=event.event_id,
                                                         user_id=event.user_id,
                                                         peer_id=event.peer_id)

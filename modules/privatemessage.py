@@ -11,7 +11,7 @@ main_keyboard = Keyboard(one_time=False, inline=False)
 main_keyboard.add(Text("Товары", payload={"command": "products"}),
                   color=KeyboardButtonColor.POSITIVE).row()
 main_keyboard.add(Text("Профиль", payload={"command": "profile"}),
-                  color=KeyboardButtonColor.POSITIVE).row()
+                  color=KeyboardButtonColor.POSITIVE)
 
 main_admin_keyboard = Keyboard(one_time=False, inline=False)
 main_admin_keyboard.add(Text("Товары", payload={"command": "products"}),
