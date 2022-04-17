@@ -34,3 +34,5 @@ DATABASES = {
 """
 
 INSTALLED_APPS = ("db",)
+
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")

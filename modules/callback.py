@@ -1,4 +1,4 @@
-from vkbottle import GroupEventType
+from vkbottle import GroupEventType, PhotoMessageUploader
 from vkbottle import Keyboard, Callback, KeyboardButtonColor, Text
 from vkbottle.bot import Blueprint, MessageEvent
 
@@ -44,10 +44,19 @@ async def handle_callback(event: MessageEvent):
             Callback("Удалить", {"command": "delete_product", "product_id": product_id,
                                  "from_page": payload.get("from_page", 1)
                                  }), color=KeyboardButtonColor.NEGATIVE)
-        await event.send_message(message=f"Продукт #{product_id}:\n"
-                                         f"Название: {product.name}\n"
-                                         f"Цена: {float(product.price)} RUB",
-                                 keyboard=category_keyboard.get_json())
+        if product.image:
+            file = await PhotoMessageUploader(bp.api).upload(f"{product.image.path}",
+                                                             peer_id=event.peer_id)
+            await event.send_message(message=f"Продукт #{product_id}:\n"
+                                             f"Название: {product.name}\n"
+                                             f"Цена: {float(product.price)} RUB",
+                                     keyboard=category_keyboard.get_json(),
+                                     attachment=file)
+        else:
+            await event.send_message(message=f"Продукт #{product_id}:\n"
+                                             f"Название: {product.name}\n"
+                                             f"Цена: {float(product.price)} RUB",
+                                     keyboard=category_keyboard.get_json())
         await bp.api.messages.send_message_event_answer(event_id=event.event_id,
                                                         user_id=event.user_id,
                                                         peer_id=event.peer_id)

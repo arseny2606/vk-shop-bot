@@ -1,6 +1,9 @@
 import json
+import urllib.request
+from tempfile import NamedTemporaryFile
 
-from vkbottle import Keyboard, Text, KeyboardButtonColor, Callback
+from django.core.files import File
+from vkbottle import Keyboard, Text, KeyboardButtonColor
 from vkbottle.bot import Blueprint, rules, Message
 
 from db.models import Category, Product
@@ -77,7 +80,7 @@ async def manage_products_page(message: Message):
 @bp.on.message(payload={"command": "add_product"})
 @check_role(priority=80)
 async def add_product(message: Message):
-    await message.answer(f"Введите имя продукта:", keyboard=products_keyboard.get_json())
+    await message.answer(f"Введите название продукта:")
     await bp.state_dispenser.set(message.from_id, AddProduct.NAME)
 
 
@@ -128,7 +131,7 @@ async def edit_product_price_handler(message: Message):
 @bp.on.message(state=AddProduct.NAME)
 @check_role(priority=80)
 async def add_product_name_handler(message: Message):
-    await message.answer(f"Введите цену:", keyboard=products_keyboard.get_json())
+    await message.answer(f"Введите цену:")
     await bp.state_dispenser.set(message.from_id, AddProduct.PRICE, name=message.text)
 
 
@@ -147,10 +150,39 @@ async def add_product_price_handler(message: Message):
 @bp.on.message(state=AddProduct.CATEGORY)
 @check_role(priority=80)
 async def add_product_category_handler(message: Message):
+    temp_keyboard = Keyboard(inline=True)
+    temp_keyboard.add(Text("Пропустить"))
+    await message.answer(f"Прикрепите фото, если оно необходимо.", keyboard=temp_keyboard.get_json())
+    await bp.state_dispenser.set(message.from_id, AddProduct.IMAGE,
+                                 name=message.state_peer.payload['name'],
+                                 price=message.state_peer.payload['price'],
+                                 category=Category.objects.get_or_create(
+                                     name=json.loads(message.payload)["category"])[0])
+    # new_product = Product(name=message.state_peer.payload['name'],
+    #                       price=int(message.state_peer.payload['price']),
+    #                       category=Category.objects.get_or_create(
+    #                           name=json.loads(message.payload)["category"])[0])
+    # new_product.save()
+    # await message.answer(f'Продукт <<{new_product.name}>> успешно добавлен',
+    #                      keyboard=products_keyboard.get_json())
+    # await bp.state_dispenser.delete(message.from_id)
+    # await manage_products(message)
+
+
+@bp.on.message(state=AddProduct.IMAGE)
+@check_role(priority=80)
+async def add_product_image_handler(message: Message):
     new_product = Product(name=message.state_peer.payload['name'],
                           price=int(message.state_peer.payload['price']),
-                          category=Category.objects.get_or_create(
-                              name=json.loads(message.payload)["category"])[0])
+                          category=message.state_peer.payload['category'])
+    if message.attachments:
+        if message.attachments[0].photo:
+            new_product.save()
+            img_temp = NamedTemporaryFile()
+            img_temp.write(
+                urllib.request.urlopen(message.attachments[0].photo.sizes[-1].url).read())
+            img_temp.flush()
+            new_product.image.save(f"avatar_{new_product.id}.jpg", File(img_temp), save=True)
     new_product.save()
     await message.answer(f'Продукт <<{new_product.name}>> успешно добавлен',
                          keyboard=products_keyboard.get_json())

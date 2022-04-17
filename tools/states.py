@@ -5,20 +5,22 @@ class AddProduct(BaseStateGroup):
     NAME = 0
     PRICE = 1
     CATEGORY = 2
+    IMAGE = 3
 
 
 class EditProduct(BaseStateGroup):
-    PRICE = 3
+    PRICE = 4
+    IMAGE = 5
 
 
 class AddCategory(BaseStateGroup):
-    NAME = 4
+    NAME = 6
 
 
 class EditCategory(BaseStateGroup):
-    EDIT_NAME = 5
+    EDIT_NAME = 7
 
 
 class AddBalance(BaseStateGroup):
-    AMOUNT = 6
-    CHECK = 7
+    AMOUNT = 8
+    CHECK = 9
