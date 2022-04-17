@@ -158,15 +158,6 @@ async def add_product_category_handler(message: Message):
                                  price=message.state_peer.payload['price'],
                                  category=Category.objects.get_or_create(
                                      name=json.loads(message.payload)["category"])[0])
-    # new_product = Product(name=message.state_peer.payload['name'],
-    #                       price=int(message.state_peer.payload['price']),
-    #                       category=Category.objects.get_or_create(
-    #                           name=json.loads(message.payload)["category"])[0])
-    # new_product.save()
-    # await message.answer(f'Продукт <<{new_product.name}>> успешно добавлен',
-    #                      keyboard=products_keyboard.get_json())
-    # await bp.state_dispenser.delete(message.from_id)
-    # await manage_products(message)
 
 
 @bp.on.message(state=AddProduct.IMAGE)
