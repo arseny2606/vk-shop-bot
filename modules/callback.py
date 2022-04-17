@@ -90,6 +90,8 @@ async def handle_callback(event: MessageEvent):
             await event.show_snackbar("Такого продукта не существует.")
             return
         name = product.name
+        if product.image():
+            product.image.delete()
         product.delete()
         await event.show_snackbar(f"Продукт {name} успешно удалён")
         await event.edit_message(peer_id=event.peer_id,

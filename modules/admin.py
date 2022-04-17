@@ -3,7 +3,7 @@ import urllib.request
 from tempfile import NamedTemporaryFile
 
 from django.core.files import File
-from vkbottle import Keyboard, Text, KeyboardButtonColor
+from vkbottle import Keyboard, Text, KeyboardButtonColor, PhotoMessageUploader
 from vkbottle.bot import Blueprint, rules, Message
 
 from db.models import Category, Product
@@ -119,11 +119,42 @@ async def add_category(message: Message):
 @check_role(priority=80)
 async def edit_product_price_handler(message: Message):
     product = message.state_peer.payload['product']
-    page = message.state_peer.payload.get('from_page', 1)
     if message.text != "Оставить":
         product.price = float(message.text)
         product.save()
-    await message.answer(f"Продукт <<{product.name}>> успешно изменён")
+    await bp.state_dispenser.set(message.peer_id, EditProduct.IMAGE,
+                                 product=message.state_peer.payload["product"],
+                                 from_page=message.state_peer.payload["from_page"])
+    temp_keyboard = Keyboard(inline=True)
+    temp_keyboard.add(Text("Оставить"))
+    if product.image:
+        temp_keyboard.add(Text("Удалить"), color=KeyboardButtonColor.NEGATIVE)
+        file = await PhotoMessageUploader(bp.api).upload(f"{product.image.path}",
+                                                         peer_id=message.peer_id)
+        await message.answer(f"Прикрепите новую фотографию, оставьте текущую или удалите её.",
+                             keyboard=temp_keyboard.get_json(),
+                             attachment=file)
+    else:
+        await message.answer(f"Прикрепите новую фотографию или оставьте продукт без фотографии.",
+                             keyboard=temp_keyboard.get_json())
+
+
+@bp.on.message(state=EditProduct.IMAGE)
+@check_role(priority=80)
+async def edit_product_image_handler(message: Message):
+    page = message.state_peer.payload.get('from_page', 1)
+    product = message.state_peer.payload['product']
+    if message.text == "Удалить":
+        product.image.delete()
+        product.save()
+    if message.attachments:
+        if message.attachments[0].photo:
+            img_temp = NamedTemporaryFile()
+            img_temp.write(
+                urllib.request.urlopen(message.attachments[0].photo.sizes[-1].url).read())
+            img_temp.flush()
+            product.image.save(f"image_{product.id}.jpg", File(img_temp), save=True)
+            product.save()
     await manage_products(message, page)
     await bp.state_dispenser.delete(message.from_id)
 
@@ -173,7 +204,7 @@ async def add_product_image_handler(message: Message):
             img_temp.write(
                 urllib.request.urlopen(message.attachments[0].photo.sizes[-1].url).read())
             img_temp.flush()
-            new_product.image.save(f"avatar_{new_product.id}.jpg", File(img_temp), save=True)
+            new_product.image.save(f"image_{new_product.id}.jpg", File(img_temp), save=True)
     new_product.save()
     await message.answer(f'Продукт <<{new_product.name}>> успешно добавлен',
                          keyboard=products_keyboard.get_json())
