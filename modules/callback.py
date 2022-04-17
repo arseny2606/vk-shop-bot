@@ -25,6 +25,7 @@ async def handle_callback(event: MessageEvent):
                                                         peer_id=event.peer_id)
         return
     if command == "show_product":
+        admin = payload.get("admin", True)
         product_id = payload.get("product_id")
         if product_id is None:
             await bp.api.messages.send_message_event_answer(event_id=event.event_id,
@@ -36,14 +37,20 @@ async def handle_callback(event: MessageEvent):
             await event.show_snackbar("Такого продукта не существует.")
             return
         category_keyboard = Keyboard(one_time=False, inline=True)
-        category_keyboard.add(
-            Callback("Изменить", {"command": "edit_product", "product_id": product_id,
-                                  "from_page": payload.get("from_page", 1)
-                                  }), color=KeyboardButtonColor.PRIMARY).row()
-        category_keyboard.add(
-            Callback("Удалить", {"command": "delete_product", "product_id": product_id,
-                                 "from_page": payload.get("from_page", 1)
-                                 }), color=KeyboardButtonColor.NEGATIVE)
+        if admin:
+            category_keyboard.add(
+                Callback("Изменить", {"command": "edit_product", "product_id": product_id,
+                                      "from_page": payload.get("from_page", 1)
+                                      }), color=KeyboardButtonColor.PRIMARY).row()
+            category_keyboard.add(
+                Callback("Удалить", {"command": "delete_product", "product_id": product_id,
+                                     "from_page": payload.get("from_page", 1)
+                                     }), color=KeyboardButtonColor.NEGATIVE)
+        else:
+            category_keyboard.add(
+                Callback("Купить", {"command": "buy_product", "product_id": product_id,
+                                    "from_page": payload.get("from_page", 1)
+                                    }), color=KeyboardButtonColor.POSITIVE)
         if product.image:
             file = await PhotoMessageUploader(bp.api).upload(f"{product.image.path}",
                                                              peer_id=event.peer_id)
@@ -188,7 +195,62 @@ async def handle_callback(event: MessageEvent):
         elif status == "WAITING":
             await event.show_snackbar("Счёт не оплачен.")
         return
+    if command == "show_products":
+        category_id = payload.get("category_id")
+        category = Category.objects.filter(id=category_id).first()
+        products = Product.objects.filter(category=category).all()
+        page = payload.get("page")
+        if page:
+            products_list_keyboard = generate_products_keyboard(page, False, products)
+            if products_list_keyboard is None:
+                await event.send_message(f"Здесь ничего нет.")
+                await bp.api.messages.send_message_event_answer(event_id=event.event_id,
+                                                                user_id=event.user_id,
+                                                                peer_id=event.peer_id)
+            await event.send_message(f"Страница {page}",
+                                     keyboard=products_list_keyboard.get_json())
+        else:
+            products_list_keyboard = generate_products_keyboard(1, False, products)
+            if products_list_keyboard is None:
+                await event.send_message(f"Здесь ничего нет.")
+                await bp.api.messages.send_message_event_answer(event_id=event.event_id,
+                                                                user_id=event.user_id,
+                                                                peer_id=event.peer_id)
+            await event.send_message("Выберите продукт",
+                                     keyboard=products_list_keyboard.get_json())
+        await bp.api.messages.send_message_event_answer(event_id=event.event_id,
+                                                        user_id=event.user_id,
+                                                        peer_id=event.peer_id)
+        return
+    if command == "buy_product":
+        user_profile = User.objects.get_or_create(user_id=event.object.user_id)[0]
+        product_id = payload.get("product_id")
+        if product_id is None:
+            await bp.api.messages.send_message_event_answer(event_id=event.event_id,
+                                                            user_id=event.user_id,
+                                                            peer_id=event.peer_id)
+            return
+        product = Product.objects.filter(id=product_id).first()
+        if not product:
+            await event.show_snackbar("Такого продукта не существует.")
+            return
+        if user_profile.balance < product.price:
+            await event.send_message(f"Недостаточный баланс.")
+            await bp.api.messages.send_message_event_answer(event_id=event.event_id,
+                                                            user_id=event.user_id,
+                                                            peer_id=event.peer_id)
+            return
 
+        user_profile.balance -= product.price
+        user_profile.save()
+        await event.edit_message(peer_id=event.peer_id,
+                                 conversation_message_id=event.conversation_message_id,
+                                 message="Товар куплен.")
+        await event.show_snackbar("Товар успешно куплен.")
+        await bp.api.messages.send_message_event_answer(event_id=event.event_id,
+                                                        user_id=event.user_id,
+                                                        peer_id=event.peer_id)
+        return
     await bp.api.messages.send_message_event_answer(event_id=event.event_id,
                                                     user_id=event.user_id,
                                                     peer_id=event.peer_id)
