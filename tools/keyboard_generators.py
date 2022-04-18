@@ -11,7 +11,7 @@ def generate_products_keyboard(page: int = 1, admin: bool = True, products=None)
     if page < 1:
         return None
     products = products[7 * (page - 1):7 * page]
-    if not products:
+    if not products and page != 1:
         return None
     products_list_keyboard = Keyboard(one_time=False, inline=False)
     if admin:
@@ -24,26 +24,27 @@ def generate_products_keyboard(page: int = 1, admin: bool = True, products=None)
                                              "from_page": page,
                                              "admin": admin}),
                                    color=KeyboardButtonColor.POSITIVE).row()
-    if admin:
-        if page - 1:
+    if products:
+        if admin:
+            if page - 1:
+                products_list_keyboard.add(
+                    Text("⬅",
+                         payload={"command": "manage_products", "page": page - 1}),
+                    color=KeyboardButtonColor.SECONDARY)
             products_list_keyboard.add(
-                Text("⬅",
-                     payload={"command": "manage_products", "page": page - 1}),
-                color=KeyboardButtonColor.SECONDARY)
-        products_list_keyboard.add(
-            Text("➡",
-                 payload={"command": "manage_products", "page": page + 1}),
-            color=KeyboardButtonColor.SECONDARY).row()
-    else:
-        if page - 1:
+                Text("➡",
+                     payload={"command": "manage_products", "page": page + 1}),
+                color=KeyboardButtonColor.SECONDARY).row()
+        else:
+            if page - 1:
+                products_list_keyboard.add(
+                    Callback("⬅",
+                             payload={"command": "show_products", "page": page - 1}),
+                    color=KeyboardButtonColor.SECONDARY)
             products_list_keyboard.add(
-                Callback("⬅",
-                         payload={"command": "show_products", "page": page - 1}),
-                color=KeyboardButtonColor.SECONDARY)
-        products_list_keyboard.add(
-            Callback("➡",
-                     payload={"command": "show_products", "page": page + 1}),
-            color=KeyboardButtonColor.SECONDARY).row()
+                Callback("➡",
+                         payload={"command": "show_products", "page": page + 1}),
+                color=KeyboardButtonColor.SECONDARY).row()
     if admin:
         products_list_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
                                    color=KeyboardButtonColor.PRIMARY)
@@ -58,7 +59,7 @@ def generate_categories_keyboard(page: int = 1, admin: bool = True) -> Optional[
     if page < 1:
         return None
     categories = categories[7 * (page - 1):7 * page]
-    if not categories:
+    if not categories and page != 1:
         return None
     categories_list_keyboard = Keyboard(one_time=False, inline=False)
     if admin:
@@ -70,15 +71,16 @@ def generate_categories_keyboard(page: int = 1, admin: bool = True) -> Optional[
                                                "category_id": category.id,
                                                "from_page": page}),
                                      color=KeyboardButtonColor.POSITIVE).row()
-    if page - 1:
+    if categories:
+        if page - 1:
+            categories_list_keyboard.add(
+                Text("⬅",
+                     payload={"command": "manage_categories" if admin else "products", "page": page - 1}),
+                color=KeyboardButtonColor.SECONDARY)
         categories_list_keyboard.add(
-            Text("⬅",
-                 payload={"command": "manage_categories" if admin else "products", "page": page - 1}),
-            color=KeyboardButtonColor.SECONDARY)
-    categories_list_keyboard.add(
-        Text("➡",
-             payload={"command": "manage_categories" if admin else "products", "page": page + 1}),
-        color=KeyboardButtonColor.SECONDARY).row()
+            Text("➡",
+                 payload={"command": "manage_categories" if admin else "products", "page": page + 1}),
+            color=KeyboardButtonColor.SECONDARY).row()
     if admin:
         categories_list_keyboard.add(Text("Назад", payload={"command": "admin_panel"}),
                                      color=KeyboardButtonColor.PRIMARY)
