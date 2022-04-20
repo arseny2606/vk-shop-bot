@@ -4,3 +4,5 @@ vkbottle~=4.2.2
 python-dotenv~=0.20.0
 nest-asyncio~=1.5.5
 aiohttp~=3.8.1
+psycopg2~=2.9.3
+Pillow~=9.1.0
