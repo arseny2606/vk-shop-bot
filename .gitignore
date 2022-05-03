@@ -4,3 +4,4 @@ venv/
 .env
 sync.sh
 error.log
+.gitpod.yml
